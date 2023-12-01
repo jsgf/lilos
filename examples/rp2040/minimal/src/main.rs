@@ -16,6 +16,10 @@
 // We don't have a conventional `main` (`cortex_m_rt::entry` is different).
 #![no_main]
 
+use core::convert::Infallible;
+use rp2040_pac::Peripherals;
+use rp2040_pac::SIO;
+
 // Pull in a panic handling crate. We have to `extern crate` this explicitly
 // because it isn't otherwise referenced in code!
 extern crate panic_halt;
@@ -25,9 +29,6 @@ extern crate panic_halt;
 #[link_section = ".boot_loader"]
 #[used]
 static BOOT: [u8; 256] = rp2040_boot2::BOOT_LOADER_W25Q080;
-
-// How often our blinky task wakes up (1/2 our blink frequency).
-const PERIOD: lilos::time::Millis = lilos::time::Millis(500);
 
 #[cortex_m_rt::entry]
 fn main() -> ! {
@@ -40,32 +41,61 @@ fn main() -> ! {
     p.RESETS.reset.modify(|_, w| w.io_bank0().clear_bit());
     while !p.RESETS.reset_done.read().io_bank0().bit() {}
 
-    // Set GPIO25 to be controlled by SIO.
-    p.IO_BANK0.gpio[25].gpio_ctrl.write(|w| w.funcsel().sio());
-    // Now have SIO configure GPIO25 as an output.
-    p.SIO.gpio_oe_set.write(|w| unsafe { w.bits(1 << 25) });
+    // Set GPIO25 & 21 to be controlled by SIO.
+    gpio_setup(&p, 25);
+    gpio_setup(&p, 21);
 
-    // Create a task to blink the LED. You could also write this as an `async
-    // fn` but we've inlined it as an `async` block for simplicity.
-    let blink = core::pin::pin!(async {
-        // PeriodicGate is a `lilos` tool for implementing low-jitter periodic
-        // actions. It opens once per PERIOD.
-        let mut gate = lilos::time::PeriodicGate::from(PERIOD);
+    // Set GPIO18 to be controlled by SIO.
+    gpio_setup(&p, 18);
+    gpio_setup(&p, 20);
 
-        // Loop forever, blinking things. Note that this borrows the device
-        // peripherals `p` from the enclosing stack frame.
-        loop {
-            p.SIO.gpio_out_xor.write(|w| unsafe { w.bits(1 << 25) });
-            gate.next_time().await;
-        }
-    });
+    // Create a task to blink the LED.
+    let blink = core::pin::pin!(led_1hz(&p.SIO));
+
+    let bzz = core::pin::pin!(gp18_khz(&p.SIO));
 
     // Configure the systick timer for 1kHz ticks at the default ROSC speed of
     // _roughly_ 6 MHz.
     lilos::time::initialize_sys_tick(&mut cp.SYST, 6_000_000);
     // Set up and run the scheduler with a single task.
     lilos::exec::run_tasks(
-        &mut [blink],  // <-- array of tasks
-        lilos::exec::ALL_TASKS,  // <-- which to start initially
+        &mut [blink, bzz],      // <-- array of tasks
+        lilos::exec::ALL_TASKS, // <-- which to start initially
     )
+}
+
+fn gpio_setup(p: &Peripherals, pin: usize) {
+    p.IO_BANK0.gpio[pin].gpio_ctrl.write(|w| w.funcsel().sio());
+    // Now have SIO configure GPIO25 as an output.
+    p.SIO.gpio_oe_set.write(|w| unsafe { w.bits(1 << pin) });
+}
+
+async fn led_1hz(sio: &SIO) -> Infallible {
+    const PERIOD: lilos::time::Millis = lilos::time::Millis(500);
+
+    // PeriodicGate is a `lilos` tool for implementing low-jitter periodic
+    // actions. It opens once per PERIOD.
+    let mut gate = lilos::time::PeriodicGate::from(PERIOD);
+
+    // Loop forever, blinking things. Note that this borrows the device
+    // peripherals `p` from the enclosing stack frame.
+    loop {
+        sio.gpio_out_xor
+            .write(|w| unsafe { w.bits((1 << 21) | (1 << 25)) });
+        gate.next_time().await;
+    }
+}
+
+async fn gp18_khz(sio: &SIO) -> Infallible {
+    // How often our blinky task wakes up (1/2 our blink frequency).
+    const PERIOD: lilos::time::Millis = lilos::time::Millis(1);
+
+    let mut gate = lilos::time::PeriodicGate::from(PERIOD);
+
+    // Loop forever, blinking things. Note that this borrows the device
+    // peripherals `p` from the enclosing stack frame.
+    loop {
+        sio.gpio_out_xor.write(|w| unsafe { w.bits(1 << 18) });
+        gate.next_time().await;
+    }
 }
