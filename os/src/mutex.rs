@@ -73,11 +73,10 @@
 use core::cell::UnsafeCell;
 use core::mem::ManuallyDrop;
 use core::pin::Pin;
-use core::sync::atomic::{AtomicUsize, Ordering};
 
 use pin_project_lite::pin_project;
 
-use crate::atomic::AtomicArithExt;
+use crate::atomic::{AtomicUsize, Ordering, AtomicArithExt};
 use crate::exec::noop_waker;
 use crate::list::List;
 

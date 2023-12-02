@@ -134,19 +134,18 @@ use core::convert::Infallible;
 use core::future::Future;
 use core::mem;
 use core::pin::Pin;
-use core::sync::atomic::{AtomicUsize, Ordering};
 use core::task::{Context, Poll, RawWaker, RawWakerVTable, Waker};
 
 use pin_project_lite::pin_project;
 
-use crate::atomic::{AtomicExt, AtomicArithExt};
+use crate::atomic::{AtomicExt, AtomicUsize, Ordering, AtomicArithExt};
 
 // Despite the untangling of exec and time that happened in the 1.0 release, we
 // still have some intimate dependencies between the modules. You'll see a few
 // other cfg(feature = "systick") lines below.
 cfg_if::cfg_if! {
     if #[cfg(feature = "systick")] {
-        use core::sync::atomic::AtomicPtr;
+        use crate::atomic::AtomicPtr;
 
         use crate::cheap_assert;
         use crate::list::List;
