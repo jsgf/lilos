@@ -9,6 +9,7 @@ fn main() {
         "thumbv6m-none-eabi" => {
             // Don't turn anything on.
         }
+        "riscv32imc-unknown-none-elf" => {}
         t => {
             panic!("unknown target {}, update build.rs", t);
         }

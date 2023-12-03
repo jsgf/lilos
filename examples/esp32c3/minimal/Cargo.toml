@@ -1,0 +1,32 @@
+[package]
+name = "lilos-example-esp32c3-minimal"
+authors = ["Cliff L. Biffle <code@cliffle.com>"]
+version = "0.1.0"
+edition = "2021"
+license = "MPL-2.0"
+description = "Minimal example for lilos on rp2040."
+repository = "https://github.com/cbiffle/lilos/"
+keywords = ["async", "embedded", "realtime", "os"]
+categories = ["embedded"]
+readme = "README.mkdn"
+publish = false
+
+[package.metadata.docs.rs]
+default-target = "riscv32imc-unknown-none-elf"
+
+[dependencies]
+riscv = "0.10"
+esp-riscv-rt = "0.5"
+lilos = { path = "../../../os", default-features = false, features = ["systick", "portable-atomic"] }
+panic-halt = "0.2.0"
+
+[[bin]]
+name = "lilos-example-esp32c3-minimal"
+test = false
+bench = false
+
+[profile.release]
+codegen-units = 1 # better optimizations
+debug = true # symbols are nice and they don't increase the size on Flash
+lto = true # better optimizations
+opt-level = "z"
