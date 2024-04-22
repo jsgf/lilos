@@ -159,6 +159,7 @@ cfg_if::cfg_if! {
 
 /// Accumulates bitmasks from wakers as they are invoked. The executor
 /// atomically checks and clears this at each iteration.
+#[cfg_attr(feature = "thread_local", thread_local)]
 static WAKE_BITS: AtomicUsize = AtomicUsize::new(0);
 
 /// Computes the wake bit mask for the task with the given index, which is
@@ -593,6 +594,7 @@ pub unsafe fn run_tasks_with_preemption_and_idle(
 /// Note that the `#[used]` annotation is load-bearing here -- without it the
 /// compiler will happily throw the variable away, confusing the debugger.
 #[used]
+#[cfg_attr(feature = "thread_local", thread_local)]
 static mut TASK_FUTURES: Option<*mut [Pin<*mut dyn Future<Output = Infallible>>]> = None;
 
 /// Constant that can be passed to `run_tasks` and `wake_tasks_by_mask` to mean
@@ -929,10 +931,12 @@ pub fn wake_task_by_index(index: usize) {
 
 /// Tracks whether the timer list has been initialized.
 #[cfg(feature = "systick")]
+#[cfg_attr(feature = "thread_local", thread_local)]
 static TIMER_LIST_READY: AtomicBool = AtomicBool::new(false);
 
 /// Storage for the timer list.
 #[cfg(feature = "systick")]
+#[cfg_attr(feature = "thread_local", thread_local)]
 static mut TIMER_LIST: MaybeUninit<List<TickTime>> = MaybeUninit::uninit();
 
 /// Panics if called from an interrupt service routine (ISR). This is used to

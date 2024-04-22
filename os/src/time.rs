@@ -91,8 +91,10 @@ use pin_project_lite::pin_project;
 use crate::atomic::AtomicArithExt;
 
 /// Bottom 32 bits of the tick counter. Updated by ISR.
+#[cfg_attr(feature = "thread_local", thread_local)]
 static TICK: AtomicU32 = AtomicU32::new(0);
 /// Top 32 bits of the tick counter. Updated by ISR.
+#[cfg_attr(feature = "thread_local", thread_local)]
 static EPOCH: AtomicU32 = AtomicU32::new(0);
 
 /// Sets up the tick counter for 1kHz operation, assuming a CPU core clock of

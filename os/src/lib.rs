@@ -128,6 +128,7 @@
 //! [Cancellation]: https://github.com/cbiffle/lilos/blob/main/doc/cancellation.adoc
 
 #![no_std]
+#![cfg_attr(feature = "thread_local", feature(thread_local))]
 
 #![warn(
     elided_lifetimes_in_paths,

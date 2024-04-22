@@ -20,6 +20,7 @@ default = ["mutex", "spsc", "systick"]
 mutex = []
 spsc = []
 systick = []
+thread_local = []
 
 [dependencies]
 cfg-if = "1.0.0"
